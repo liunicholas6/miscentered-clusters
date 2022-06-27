@@ -30,9 +30,6 @@ def rho_d22(theta, r):
     N*1 array of density profile values
     """
 
-    r_0 = 5 # Fix r_0 to 1.5 Mpc/h
-
-
     # Unpack element-by-element so multinest doesn't complain
     lg_alpha = theta[0]
     lg_beta = theta[1]
@@ -82,8 +79,6 @@ def log_deriv_d22(theta, r):
     -------
     N*1 array of density profile values
     """
-
-    r_0 = 5 # Fix r_0 to 1.5 Mpc/h
 
     # Unpack element-by-element so multinest doesn't complain
     lg_alpha = theta[0]
@@ -245,13 +240,32 @@ def fit_d22(data_vec, base_path, out_dir=None, n_live_points=500):
     else:
         return stacked_data
 
-
-def sigma_d22(theta, r, l_max = 40):
-    if np.isscalar(r):
-        sigma, _ = quad(lambda l: rho_d22(theta, np.sqrt(r**2 + l**2)), -l_max, l_max)
-        return sigma
-    else:
-        return np.array([sigma_d22(theta, r_i, l_max) for r_i in r])
+def sigma_d22(theta, r, l_max = 7):
+    l = np.linspace(-l_max, l_max)
+    theta_0 = theta[0:9]
+    f = theta[10]
+    sigma_r = np.exp(theta[11])
+    def sigma_0(r):
+        return np.array([np.trapz(rho_d22(theta_0, np.sqrt(r_i**2 + l**2)), l) for r_i in r])
+    def sigma_mis(r_mis):
+        def integrand(phi, r, r_mis):
+            return sigma_0(np.sqrt(r**2 + r_mis**2 + 2 * r * r_mis * np.cos(phi)))
+    
+        def sigma_mis_cond(r_mis, r):     
+            phi = np.linspace(0, np.pi, 25)
+            return np.trapz(integrand(phi, r, r_mis), phi) /(2 * np.pi)
+        
+        def prob_r_mis(r_mis):
+            return r_mis/(sigma_r)**2 * np.exp(-(r_mis)**2 /(2*sigma_r**2))
+        
+        def integrand2(r_mis, r):
+            return np.array([prob_r_mis(r_mis_i)*sigma_mis_cond(r_mis_i, r) for r_mis_i in r_mis])
+        
+        r_mis = np.linspace(0, 1)
+        return np.array([np.trapz(integrand2(r_mis, r_i), r_mis) for r_i in r])
+    
+    return (1 - f) * sigma_0(r) + f * sigma_mis(r)
+                
 
 def fit_d22_2d(data_vec, base_path, out_dir=None, n_live_points=500):
     """
@@ -262,7 +276,7 @@ def fit_d22_2d(data_vec, base_path, out_dir=None, n_live_points=500):
     theta: Nparam*1 array
         d22 model parameters NOT in the form
             [log(alpha), log(beta), log(gamma), log(r_s), log(r_t),
-             log(rho_s), log(rho_0), s_e)]
+             log(rho_s), log(rho_0), s_e, f, ln(sigma_r))]
     out_dir: str
         String specifying where to store chains from model fitting
     """
@@ -280,7 +294,7 @@ def fit_d22_2d(data_vec, base_path, out_dir=None, n_live_points=500):
         theta: Nparam*1 array
             DK14 model parameters in the form
                 [log(alpha), log(beta), log(gamma), log(r_s), log(r_t),
-                 log(rho_s), log(rho_0), s_e)]
+                 log(rho_s), log(rho_0), s_e, f, ln(sigma_r))]
         data_vec: 3 element tuple
             Tuple containing measured radii, densities, and covariance.
 
@@ -306,7 +320,7 @@ def fit_d22_2d(data_vec, base_path, out_dir=None, n_live_points=500):
     #**************************************************************************
 
     # Format prior and likelihood for multinest
-    def prior(cube, ndim=9, nparam=9):
+    def prior(cube, ndim=11, nparam=11):
         """
         Prior on parameters. Can be changed if chains aren't converging.
         Gaussian_prior and uniform_prior are functions defined in
@@ -323,19 +337,21 @@ def fit_d22_2d(data_vec, base_path, out_dir=None, n_live_points=500):
         cube[6] = uniform_prior(cube[6], log10(0.01), log10(4))  # lg_s
         cube[7] = uniform_prior(cube[7], 1, log10(2000))           # lg_d_max
         cube[8] = uniform_prior(cube[8], -20, 20) #lg_rho_m
+        cube[9] = uniform_prior(cube[9], 0.2, 0.2)  #f
+        cube[10] = gaussian_prior(cube[10], -1.19, 0.22**2)       #sigma_r
 
         return cube
 
-    def loglike(cube, ndim=9, nparam=9):
+    def loglike(cube, ndim=11, nparam=11):
         return ln_like2d(cube, *data_vec)
 
     print(TermColors.CGREEN+"Fitting profiles with multinest"+TermColors.CEND)
-    pymultinest.run(loglike, prior, 9, n_live_points = n_live_points,
+    pymultinest.run(loglike, prior, 11, n_live_points = n_live_points,
                     outputfiles_basename=base_path,
                     resume=False, verbose=False, evidence_tolerance = 0.01)
     # Save chains
 
-    n_params  = 9
+    n_params  = 11
     multinest_analyzer = pymultinest.Analyzer(n_params, base_path)
 
     # Save files
