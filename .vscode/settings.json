@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "../../anaconda3/lib/python3.9/site-packages",
+        "../../.local/lib/python3.9/site-packages/pymultinest-2.11-py3.9.egg"
+    ]
+}

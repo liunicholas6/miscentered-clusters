@@ -61,7 +61,6 @@ def rho_d22(theta, r):
 
     return rho_m * (rho_orbit(r) + rho_infall(r))
 
-
 def log_deriv_d22(theta, r):
     """
     Logarithmic derivative of profile Diemer 2022. Uses the relation
@@ -241,6 +240,23 @@ def fit_d22(data_vec, base_path, out_dir=None, n_live_points=500):
         return stacked_data
 
 def sigma_d22(theta, r, l_max = 7):
+    """
+    Definition of halo profile model from Diemer 2022, projected into 2D with the miscentering profile from
+    Shin et. al 2019
+
+    Parameters
+    ----------
+    theta: Nparam*1 array
+        D22 model parameters in the form
+            [log(alpha), log(beta), log(rho_s/rho_m), log(r_s), log(r_t), log(d_1), log(s), log(d_max)]
+    r: N*1 array
+        Radial values (in Mpc/h) at which to compute the profile
+
+    Returns
+    -------
+    N*1 array of density profile values
+    """
+
     l = np.linspace(-l_max, l_max)
     theta_0 = theta[0:9]
     f = theta[10]
@@ -265,7 +281,6 @@ def sigma_d22(theta, r, l_max = 7):
         return np.array([np.trapz(integrand2(r_mis, r_i), r_mis) for r_i in r])
     
     return (1 - f) * sigma_0(r) + f * sigma_mis(r)
-                
 
 def fit_d22_2d(data_vec, base_path, out_dir=None, n_live_points=500):
     """
