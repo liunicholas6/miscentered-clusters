@@ -115,7 +115,7 @@ def log_deriv_d22(theta, r):
 
     return drho_dr * r / rho_d22(theta, r)
 
-def get_rsp(theta):
+def get_rsp(theta, ret_log_deriv = False):
     """
     Computes location of minimum logarithmic derivative (i.e. splashback proxy)
 
@@ -135,6 +135,9 @@ def get_rsp(theta):
 
     log_deriv = log_deriv_d22(theta, r_values)
 
+    if ret_log_deriv:
+        return r_values[np.argmin(log_deriv)], log_deriv
+        
     return r_values[np.argmin(log_deriv)]
 
 #*****************************************************************************
