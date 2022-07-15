@@ -1,10 +1,13 @@
 import numpy as np
 from scipy.integrate import quad
 from colossus.cosmology import cosmology
-from colossus.halo import profile_einasto, splashback, mass_so, concentration
+from colossus.halo import profile_einasto, splashback, mass_so, concentration, profile_diemer22
 from colossus.lss import peaks
 cosmology.setCosmology('planck15')
 
+def mass_profile(rsp, M200m, z):
+    c, _ = concentration.modelBhattacharya13(M200m, z, mdef = '200m')
+    prof = profile_diemer22.ModelAProfile(M = M200m, c = c, z = z)
 
 # FUNCTION FOR EINASTO PROFILE GIVEN PARAMETERS
 def Einasto(r, rho_s, r_s, alpha):
@@ -64,37 +67,6 @@ def Method2(Rsp, alpha, z): #Rsp in Mpc/h?
     Msp_over_M200m = splashback.modelMore15MspM200m(nu200m=nu, z=z, Gamma=None, statistic='mean')
     #Msp_over_M200m = splashback.modelDiemer20MspM200m(nu200m=nu, z=z, rspdef='mean')
     
-    Msp = Msp_over_M200m*M200m
-    
-    return Msp
-
-# FUNCTION FOR METHOD 3 OF GETTING SPLASHBACK MASS:
-def Method3(Rsp, alpha, z): #Rsp in Mpc/h?
-    # 1
-    nu = nu_func(alpha)
-    # 2
-    M200m = peaks.massFromPeakHeight(nu, z) # THIS IS NOT USEFUL SO METHODS 3 AND 4 NOT USED IN THESIS
-    # 3
-    #c = 10**(-.125*np.log10(m) + 2.372) #add in h term? # Gao et al 2008 for c200 # could use colossus but its 200c?
-    c,mask = concentration.modelBhattacharya13(M200m, z, mdef = '200m')
-    #print('c = ',c) 
-    # 4
-    p_einasto = profile_einasto.EinastoProfile(M = M200m, c = c, z = z, mdef = '200m')
-    rhos = p_einasto.par['rhos'] # in Msun*h^2/kpc^3
-    rs = p_einasto.par['rs'] # in kpc
-    alpha_new = p_einasto.par['alpha']
-    # 5
-    Msp = Msp_int(Rsp, rhos, rs, alpha)
-    return Msp
-    
-# FUNCTION FOR METHOD 4 OF GETTING SPLASHBACK MASS:
-def Method4(Rsp, alpha, z): #Rsp in Mpc/h?
-    # 1
-    nu = nu_func(alpha)
-    # 2
-    M200m = peaks.massFromPeakHeight(nu, z)
-    # 4
-    Msp_over_M200m = splashback.modelMore15MspM200m(nu200m=nu, z=z, statistic='mean')
     Msp = Msp_over_M200m*M200m
     
     return Msp
