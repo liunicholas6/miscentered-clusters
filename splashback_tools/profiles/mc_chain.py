@@ -4,7 +4,7 @@ from matplotlib.pyplot import Axes
 import warnings
 
 class McChain:
-    def __init__(self, weights, loglikes, **samples):
+    def __init__(self, weights = None, loglikes = None, **samples):
         sample_vals = samples.values()
         
         if not all(isinstance(sample_val, np.ndarray) for sample_val in sample_vals):

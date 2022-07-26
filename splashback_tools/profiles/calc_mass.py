@@ -5,10 +5,6 @@ from colossus.halo import profile_einasto, splashback, mass_so, concentration, p
 from colossus.lss import peaks
 cosmology.setCosmology('planck15')
 
-def mass_profile(rsp, M200m, z):
-    c, _ = concentration.modelBhattacharya13(M200m, z, mdef = '200m')
-    prof = profile_diemer22.ModelAProfile(M = M200m, c = c, z = z)
-
 # FUNCTION FOR EINASTO PROFILE GIVEN PARAMETERS
 def Einasto(r, rho_s, r_s, alpha):
     exp_arg = -2/alpha*(((r/r_s)**alpha)-1)
