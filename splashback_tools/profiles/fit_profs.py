@@ -307,13 +307,6 @@ def fit_profile(data_vec, base_path, prof_type = "d22", is_2d = False, avg_R200m
         dens_f = rho_dk14
         n_params = 9
         def prior(cube, ndim=9, nparam=9):
-            """
-            Prior on parameters. Can be changed if chains aren't converging.
-            Gaussian_prior and uniform_prior are functions defined in
-            profile_calculations/utilities/multinest_priors that transform elements
-            on the interval [0, 1] to gaussian or uniform distributions with the
-            specified prameters.
-            """
             cube[0] = gaussian_prior(cube[0], log10(0.22), 0.6) # lg_alpha
             cube[1] = gaussian_prior(cube[1], log10(4.0), 0.2)  # lg_beta
             cube[2] = gaussian_prior(cube[2], log10(6.0), 0.2)  # lg_gamma

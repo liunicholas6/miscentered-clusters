@@ -1,5 +1,5 @@
 import numpy as np
-import scipy as sp
+from scipy.stats import norm
 from matplotlib.pyplot import Axes
 import warnings
 
@@ -54,7 +54,7 @@ class McChain:
         for k, v in samps.items():
             if len(v) != self.n_samp:
                 raise Exception("Sample wrong length")
-            self.samples[k] = v
+            self.samples[k] = np.array(v)
 
     def plot_1d_posterior(self, paramname, ax : Axes, bounds = None, **kwargs):
         mean, std = self.get_samp_stats(paramname)
@@ -65,7 +65,7 @@ class McChain:
         
         minx, maxx = bounds
         x = np.linspace(minx, maxx, 500)
-        curve = ax.plot(x, sp.stats.norm.pdf(x, mean, std), **kwargs)[0]
+        curve = ax.plot(x, norm.pdf(x, mean, std), **kwargs)[0]
         ax.yaxis.set_visible(False)
         ax.legend()
 
@@ -88,6 +88,14 @@ class McChain:
         ax.scatter(v1, v2, alpha=weights, **kwargs)
         ax.legend()
 
-    def confidence_interval(self, paramname, stds = 1):
+    def mean(self, paramname):
+        mean, _ = self.get_samp_stats(paramname)
+        return mean
+
+    def std(self, paramname):
+        _, std = self.get_samp_stats(paramname)
+        return std
+
+    def error(self, paramname):
         mean, std = self.get_samp_stats(paramname)
-        return (mean - std * stds, mean + std * stds)
+        return std/mean
